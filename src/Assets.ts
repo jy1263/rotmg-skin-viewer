@@ -5,8 +5,8 @@ const config = {
 	default: true,
 	containers: [
 		{
-			loader: "rotmg-asset",
-			type: "rotmg-loader",
+			loader: "rotmg-loader",
+			type: "rotmg",
 			sourceLoader: "url-to-text",
 			settings: {
 				readOnly: true,

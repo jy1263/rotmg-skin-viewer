@@ -1,8 +1,17 @@
 import React, { useEffect } from "react";
+import { Action, Direction, Skin, Sprite, SpriteData, SpritePosition } from "rotmg-utils";
+import { Manager } from "./Assets";
 
 export type CanvasState = {
 	data?: GLData;
+	direction: Direction;
+	action: Action;
+	flipped: boolean;
 	animationHandle?: number
+}
+
+export type CanvasProps = {
+	skin?: Skin;
 }
 
 export type AttribData = {
@@ -13,6 +22,7 @@ export type AttribData = {
 export type GLData = {
 	program: WebGLProgram;
 	texture?: WebGLTexture | null;
+	mask?: WebGLTexture | null;
 	attribs: {
 		[key: string]: AttribData 
 	};
@@ -22,37 +32,60 @@ export type GLData = {
 }
 
 const vertexSrc = `
-attribute vec2 a_position;
-attribute vec2 a_texCoord;
+	precision highp float;
 
-varying vec2 v_texCoord;
+	attribute vec2 a_position;
+	attribute vec2 a_tex_coord;
+	attribute vec2 a_mask_coord;
 
-uniform vec2 u_resolution;
+	varying vec2 v_tex_coord;
+	varying vec2 v_mask_coord;
 
-void main() {
-    vec2 zeroToOne = a_position / u_resolution;
- 
-    vec2 zeroToTwo = zeroToOne * 2.0;
- 
-    vec2 clipSpace = zeroToTwo - 1.0;
+	uniform vec2 u_resolution;
 
-	v_texCoord = a_texCoord;
- 
-    gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
-}
+	void main() {
+		vec2 zeroToOne = a_position / u_resolution;
+	
+		vec2 zeroToTwo = zeroToOne * 2.0;
+	
+		vec2 clipSpace = zeroToTwo - 1.0;
+
+		v_tex_coord = a_tex_coord;
+		v_mask_coord = a_mask_coord;
+	
+		gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+	}
 `
 
 const fragSrc = `
-precision mediump float;
+	precision highp float;
 
-uniform sampler2D u_image;
-uniform vec2 u_image_res;
+	uniform sampler2D u_image;
+	uniform sampler2D u_mask;
+	
+	uniform vec2 u_image_res;
+	uniform vec2 u_mask_res;
 
-varying vec2 v_texCoord;
+	uniform vec4 u_main_color;
+	uniform vec4 u_accessory_color;
 
-void main() {
-  gl_FragColor = texture2D(u_image, v_texCoord / u_image_res);
-}
+	varying vec2 v_tex_coord;
+	varying vec2 v_mask_coord;
+
+	void main() {
+		vec4 mask = texture2D(u_mask, v_mask_coord / u_mask_res);
+		if (mask.a > 0.01) {
+			if (mask.r > 0.01) {
+				gl_FragColor = vec4(mask.r, mask.r, mask.r, 1) * u_main_color;
+				return;
+			}
+			if (mask.g > 0.01) {
+				gl_FragColor = vec4(mask.g, mask.g, mask.g, 1) * u_accessory_color;
+				return;
+			}
+		}
+		gl_FragColor = texture2D(u_image, v_tex_coord / u_image_res);
+	}
 `
 
 function createProgram(gl: WebGLRenderingContext) {
@@ -89,13 +122,19 @@ function createShader(gl: WebGLRenderingContext, src: string, type: number) {
 	throw error;
 }
 
-export class Canvas extends React.Component<{}, CanvasState> {
+export class Canvas extends React.Component<CanvasProps, CanvasState> {
 	canvasRef: React.RefObject<HTMLCanvasElement>
+	sprites: Sprite[] = [];
+	time: number = 0;
 
-	constructor(props: {}) {
+	constructor(props: CanvasProps) {
 		super(props)
 		this.canvasRef = React.createRef();
-		this.state = {}
+		this.state = {
+			direction: Direction.Front,
+			action: Action.Walk,
+			flipped: false
+		}
 	}
 
 	componentDidMount() {
@@ -114,18 +153,19 @@ export class Canvas extends React.Component<{}, CanvasState> {
 			return attribData;
 		}
 
-		const createTexture = () => {
+		const createTexture = (src: string, name: string, index: number) => {
 			return new Promise<WebGLTexture | null>((res, rej) => {
 				const image = new Image();
 				image.crossOrigin = "anonymous";
-				image.src = "https://www.haizor.net/rotmg/assets/production/atlases/characters.png";
+				image.src = src;
 				image.onload = () => {
 					if (this.state.data) {
 						gl.useProgram(this.state.data.program);
-						gl.uniform2f(this.state.data.uniforms["u_image_res"], image.naturalWidth, image.naturalHeight);
+						gl.uniform2f(this.state.data.uniforms[`u_${name}_res`], image.naturalWidth, image.naturalHeight);
 					}
 
 					const texture = gl.createTexture();
+					gl.activeTexture(index);
 					gl.bindTexture(gl.TEXTURE_2D, texture);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -146,25 +186,41 @@ export class Canvas extends React.Component<{}, CanvasState> {
 			}
 
 			data.attribs["a_position"] = createAttrib(data.program, "a_position", [
-				0, 0,
-				256, 0,
-				256, 256,
-				0, 256
+				32, 32,
+				368, 32,
+				368, 368,
+				32, 368
 			]);
-			data.attribs["a_texCoord"] = createAttrib(data.program, "a_texCoord", [
+			data.attribs["a_tex_coord"] = createAttrib(data.program, "a_tex_coord", [
 				1624, 388,
 				1624 + 16, 388,
 				1624 + 16, 388 + 16,
 				1624, 388 + 16
 			]);
+			data.attribs["a_mask_coord"] = createAttrib(data.program, "a_mask_coord", [
+				0, 0,
+				0, 0,
+				0, 0,
+				0, 0 
+			]);
 
 			data.uniforms["u_resolution"] = gl.getUniformLocation(data.program, "u_resolution");
 			data.uniforms["u_image_res"] = gl.getUniformLocation(data.program, "u_image_res");
+			data.uniforms["u_mask_res"] = gl.getUniformLocation(data.program, "u_mask_res");
 
-			createTexture().then((texture: WebGLTexture | null) => {
+			data.uniforms["u_image"] = gl.getUniformLocation(data.program, "u_image");
+			data.uniforms["u_mask"] = gl.getUniformLocation(data.program, "u_mask");
+			data.uniforms["u_main_color"] = gl.getUniformLocation(data.program, "u_main_color");
+			data.uniforms["u_accessory_color"] = gl.getUniformLocation(data.program, "u_accessory_color");
+			
+			Promise.all([
+				createTexture("https://www.haizor.net/rotmg/assets/production/atlases/characters.png", "image", gl.TEXTURE0),
+				createTexture("https://www.haizor.net/rotmg/assets/production/atlases/characters_masks.png", "mask", gl.TEXTURE1)
+			]).then((textures: (WebGLTexture | null)[]) => {
 				this.setState((state) => {
 					if (state.data) {
-						state.data.texture = texture;
+						state.data.texture = textures[0];
+						state.data.mask = textures[1];
 					}
 					
 				})
@@ -175,10 +231,42 @@ export class Canvas extends React.Component<{}, CanvasState> {
 		requestAnimationFrame(this.animate);
 	}
 
+	componentDidUpdate(prevProps: CanvasProps) {
+		if (this.props.skin !== undefined) {
+			this.updateSprites();
+		}
+	}
+
 	componentWillUnmount() {
 		if (this.state.animationHandle) {
 			cancelAnimationFrame(this.state.animationHandle);
 		}
+	}
+
+	updateSprites() {
+		const skin = this.props.skin as Skin;
+		const gl = this.getGLContext();
+		if (gl === null) return;
+		if (this.state.data === undefined) return;
+		this.sprites = Manager.get("sprites", {
+			texture: skin.texture,
+			animated: true,
+			multiple: true,
+			direction: this.state.direction,
+			action: this.state.action
+		})?.value as Sprite[]
+		const spriteData = this.sprites[0].getData();
+		const { attribs } = this.state.data;
+		const textureCoord = attribs["a_tex_coord"];
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, textureCoord.buffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getVerts(spriteData.position)), gl.DYNAMIC_DRAW)
+		gl.vertexAttribPointer(textureCoord.location, 2, gl.FLOAT, false, 0, 0)
+
+		const maskCoord = attribs["a_mask_coord"];
+		gl.bindBuffer(gl.ARRAY_BUFFER, maskCoord.buffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getVerts(spriteData.maskPosition)), gl.DYNAMIC_DRAW)
+		gl.vertexAttribPointer(maskCoord.location, 2, gl.FLOAT, false, 0, 0)
 	}
 
 	getGLContext = () => {
@@ -188,18 +276,85 @@ export class Canvas extends React.Component<{}, CanvasState> {
 		return gl;
 	}
 
+	onKeyDown = (ev: React.KeyboardEvent) => {
+		const newState: any = {};
+		if (ev.key === "w") {
+			newState.direction = Direction.Front;
+			newState.flipped = false;
+		} else if (ev.key === "s") {
+			newState.direction = Direction.Back;
+			newState.flipped = false;
+		} else if (ev.key === "a") {
+			newState.direction = Direction.Side;
+			newState.flipped = true;
+		} else if (ev.key === "d") {
+			newState.direction = Direction.Side;
+			newState.flipped = false;
+		}
+
+		this.setState(newState);
+	}
+
+	onMouseDown = (ev: React.MouseEvent) => {
+		this.setState({action: Action.Attack});
+	}
+
+	onMouseUp = (ev: React.MouseEvent) => {
+		this.setState({action: Action.Walk});
+	}
+
+	getVerts(position: SpritePosition) {
+		return !this.state.flipped ? [
+			position.x, position.y,
+			position.x + position.w, position.y,
+			position.x + position.w, position.y + position.h,
+			position.x, position.y + position.h
+		] : [
+			position.x + position.w, position.y,
+			position.x, position.y,
+			position.x, position.y + position.h,
+			position.x + position.w, position.y + position.h,
+		];
+	}
+
 	animate = (timestamp: DOMHighResTimeStamp) => {
+		this.time = timestamp;
+
 		const gl = this.getGLContext();
-		if (gl !== null && this.state.data !== undefined) {
+		if (this.sprites.length > 0 && gl !== null && this.state.data !== undefined) {
 			const { program, attribs, uniforms } = this.state.data;
 
 			gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-			gl.clearColor(0, 0, 0, 1);
+			gl.clearColor(0.2, 0.2, 0.2, 1);
 			gl.clear(gl.COLOR_BUFFER_BIT);
+			gl.enable(gl.BLEND);
+			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 			gl.useProgram(program);
 
 			gl.uniform2f(uniforms["u_resolution"], gl.drawingBufferWidth, gl.drawingBufferHeight);
+			gl.uniform1i(uniforms["u_mask"], 1);
+			gl.uniform4f(uniforms["u_main_color"], 1, 1, 0, 1)
+			gl.uniform4f(uniforms["u_accessory_color"], 0, 1, 1, 1);
 
+			//TODO: is there any real way to check which sprite is used? does the game just skip the first sprite if the skin has 3?
+			let length = this.sprites.length;
+			if (length > 2) length--;
+			let index = Math.floor(this.time / 100) % length;
+			if (this.sprites.length > 2) {
+				index++;
+			}
+
+			const spriteData = this.sprites[index].getData();
+
+			const attrib = attribs["a_tex_coord"];
+			gl.bindBuffer(gl.ARRAY_BUFFER, attrib.buffer);
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getVerts(spriteData.position)), gl.DYNAMIC_DRAW)
+			gl.vertexAttribPointer(attrib.location, 2, gl.FLOAT, false, 0, 0)
+
+			const maskCoord = attribs["a_mask_coord"];
+			gl.bindBuffer(gl.ARRAY_BUFFER, maskCoord.buffer);
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getVerts(spriteData.maskPosition)), gl.DYNAMIC_DRAW)
+			gl.vertexAttribPointer(maskCoord.location, 2, gl.FLOAT, false, 0, 0)
 
 			var primitiveType = gl.TRIANGLE_FAN;
 			var offset = 0;
@@ -210,6 +365,6 @@ export class Canvas extends React.Component<{}, CanvasState> {
 	}
 
 	render() {
-		return <canvas width={400} height={400} ref={this.canvasRef}></canvas>
+		return <canvas width={400} height={400} ref={this.canvasRef} onKeyDown={this.onKeyDown} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} tabIndex={1}></canvas>
 	}
 }
