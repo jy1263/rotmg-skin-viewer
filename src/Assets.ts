@@ -14,7 +14,9 @@ const config = {
 			},
 			
 			sources: [
-				"https://www.haizor.net/rotmg/assets/production/xml/skins.xml"
+				"https://www.haizor.net/rotmg/assets/production/xml/skins.xml",
+				"https://www.haizor.net/rotmg/assets/production/xml/dyes.xml",
+				"https://www.haizor.net/rotmg/assets/production/xml/textiles.xml"
 			]
 		},
 		{

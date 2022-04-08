@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Action, Direction, Skin, Sprite, SpriteData, SpritePosition } from "rotmg-utils";
+import { Action, BasicTexture, Direction, Dye, Skin, Sprite, SpriteData, SpritePosition } from "rotmg-utils";
 import { Manager } from "./Assets";
 
 export type CanvasState = {
@@ -12,6 +12,8 @@ export type CanvasState = {
 
 export type CanvasProps = {
 	skin?: Skin;
+	mainDye?: Dye;
+	accessoryDye?: Dye;
 }
 
 export type AttribData = {
@@ -37,9 +39,13 @@ const vertexSrc = `
 	attribute vec2 a_position;
 	attribute vec2 a_tex_coord;
 	attribute vec2 a_mask_coord;
+	
+	attribute vec2 a_relative_coords;
 
 	varying vec2 v_tex_coord;
 	varying vec2 v_mask_coord;
+
+	varying vec2 v_relative_coords;
 
 	uniform vec2 u_resolution;
 
@@ -52,6 +58,8 @@ const vertexSrc = `
 
 		v_tex_coord = a_tex_coord;
 		v_mask_coord = a_mask_coord;
+
+		v_relative_coords = a_relative_coords;
 	
 		gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
 	}
@@ -62,27 +70,52 @@ const fragSrc = `
 
 	uniform sampler2D u_image;
 	uniform sampler2D u_mask;
+	uniform sampler2D u_textiles;
 	
 	uniform vec2 u_image_res;
 	uniform vec2 u_mask_res;
+	uniform vec2 u_textiles_res;
+	uniform vec2 u_player_res;
 
 	uniform vec4 u_main_color;
 	uniform vec4 u_accessory_color;
 
+	uniform vec4 u_main_textile_coords;
+	uniform vec4 u_accessory_textile_coords;
+	uniform vec4 u_main_textile_anim;
+	uniform vec4 u_accessory_textile_anim;
+
 	varying vec2 v_tex_coord;
 	varying vec2 v_mask_coord;
 
+	varying vec2 v_relative_coords;
+
 	void main() {
 		vec4 mask = texture2D(u_mask, v_mask_coord / u_mask_res);
-		if (mask.a > 0.01) {
-			if (mask.r > 0.01) {
-				gl_FragColor = vec4(mask.r, mask.r, mask.r, 1) * u_main_color;
-				return;
-			}
-			if (mask.g > 0.01) {
-				gl_FragColor = vec4(mask.g, mask.g, mask.g, 1) * u_accessory_color;
-				return;
-			}
+		if (mask.a > 0.003) {
+			if (mask.g > 0.006) {
+				if (u_accessory_color.a > 0.0) {
+					gl_FragColor = vec4(mask.g, mask.g, mask.g, 1) * u_accessory_color;
+					return;
+				}
+				if (u_accessory_textile_coords.x != 0.0) {
+					float x = mod(u_accessory_textile_coords.z * v_relative_coords.x * u_player_res.x, u_accessory_textile_coords.z);
+					float y = mod(u_accessory_textile_coords.w * v_relative_coords.y * u_player_res.y, u_accessory_textile_coords.w);
+					gl_FragColor = texture2D(u_textiles, (u_accessory_textile_coords.xy + vec2(x, y)) / u_textiles_res);
+					return;
+				}
+			} else if (mask.r > 0.003) {
+				if (u_main_color.a > 0.0) {
+					gl_FragColor = vec4(mask.r, mask.r, mask.r, 1) * u_main_color;
+					return;
+				}
+				if (u_main_textile_coords.x != 0.0) {
+					float x = mod(u_main_textile_coords.z * v_relative_coords.x * u_player_res.x, u_main_textile_coords.z);
+					float y = mod(u_main_textile_coords.w * v_relative_coords.y * u_player_res.y, u_main_textile_coords.w);
+					gl_FragColor = texture2D(u_textiles, (u_main_textile_coords.xy + vec2(x, y)) / u_textiles_res);
+					return;
+				}
+			} 
 		}
 		gl_FragColor = texture2D(u_image, v_tex_coord / u_image_res);
 	}
@@ -146,6 +179,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 				buffer: gl.createBuffer(),
 				location: gl.getAttribLocation(program, name)
 			}
+
 			gl.enableVertexAttribArray(attribData.location);
 			gl.bindBuffer(gl.ARRAY_BUFFER, attribData.buffer);
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(defaultData), gl.DYNAMIC_DRAW)
@@ -203,19 +237,32 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 				0, 0,
 				0, 0 
 			]);
+			data.attribs["a_relative_coords"] = createAttrib(data.program, "a_relative_coords", [
+				0, 0,
+				1, 0,
+				1, 1,
+				0, 1 
+			]);
+
 
 			data.uniforms["u_resolution"] = gl.getUniformLocation(data.program, "u_resolution");
 			data.uniforms["u_image_res"] = gl.getUniformLocation(data.program, "u_image_res");
 			data.uniforms["u_mask_res"] = gl.getUniformLocation(data.program, "u_mask_res");
+			data.uniforms["u_textiles_res"] = gl.getUniformLocation(data.program, "u_textiles_res");
+			data.uniforms["u_main_textile_coords"] = gl.getUniformLocation(data.program, "u_main_textile_coords");
+			data.uniforms["u_accessory_textile_coords"] = gl.getUniformLocation(data.program, "u_accessory_textile_coords");
+			data.uniforms["u_player_res"] = gl.getUniformLocation(data.program, "u_player_res");
 
 			data.uniforms["u_image"] = gl.getUniformLocation(data.program, "u_image");
 			data.uniforms["u_mask"] = gl.getUniformLocation(data.program, "u_mask");
+			data.uniforms["u_textiles"] = gl.getUniformLocation(data.program, "u_textiles");
 			data.uniforms["u_main_color"] = gl.getUniformLocation(data.program, "u_main_color");
 			data.uniforms["u_accessory_color"] = gl.getUniformLocation(data.program, "u_accessory_color");
 			
 			Promise.all([
 				createTexture("https://www.haizor.net/rotmg/assets/production/atlases/characters.png", "image", gl.TEXTURE0),
-				createTexture("https://www.haizor.net/rotmg/assets/production/atlases/characters_masks.png", "mask", gl.TEXTURE1)
+				createTexture("https://www.haizor.net/rotmg/assets/production/atlases/characters_masks.png", "mask", gl.TEXTURE1),
+				createTexture("https://www.haizor.net/rotmg/assets/production/atlases/mapObjects.png", "textiles", gl.TEXTURE2),
 			]).then((textures: (WebGLTexture | null)[]) => {
 				this.setState((state) => {
 					if (state.data) {
@@ -256,7 +303,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 			action: this.state.action
 		})?.value as Sprite[]
 		const spriteData = this.sprites[0].getData();
-		const { attribs } = this.state.data;
+		const { program, uniforms, attribs } = this.state.data;
 		const textureCoord = attribs["a_tex_coord"];
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, textureCoord.buffer);
@@ -266,7 +313,40 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		const maskCoord = attribs["a_mask_coord"];
 		gl.bindBuffer(gl.ARRAY_BUFFER, maskCoord.buffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getVerts(spriteData.maskPosition)), gl.DYNAMIC_DRAW)
-		gl.vertexAttribPointer(maskCoord.location, 2, gl.FLOAT, false, 0, 0)
+		gl.vertexAttribPointer(maskCoord.location, 2, gl.FLOAT, false, 0, 0);
+
+		gl.useProgram(program);
+		const { mainDye, accessoryDye } = this.props;
+		if (mainDye !== undefined) {
+			if (mainDye.isColor()) {
+				const rgb = mainDye.getRGB() as number[];
+				gl.uniform4f(uniforms["u_main_color"], rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, 1.0);
+			}
+			if (mainDye.isTextile()) {
+				const sprite = Manager.get("sprites", {
+					texture: mainDye.getTextileTexture()
+				})?.value as Sprite;
+				const textilePosition = sprite.getData().position;
+
+				gl.uniform4f(uniforms["u_main_textile_coords"], textilePosition.x, textilePosition.y, textilePosition.w, textilePosition.h);
+			}
+		}
+
+		if (accessoryDye !== undefined) {
+			if (accessoryDye.isColor()) {
+				const rgb = accessoryDye.getRGB() as number[];
+				gl.uniform4f(uniforms["u_accessory_color"], rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, 1.0);
+			}
+			if (accessoryDye.isTextile()) {
+				const sprite = Manager.get("sprites", {
+					texture: accessoryDye.getTextileTexture()
+				})?.value as Sprite;
+				const textilePosition = sprite.getData().position;
+				gl.uniform4f(uniforms["u_accessory_textile_coords"], textilePosition.x, textilePosition.y, textilePosition.w, textilePosition.h);
+			}
+		}
+
+		gl.uniform2f(uniforms["u_player_res"], spriteData.position.w, spriteData.position.h);
 	}
 
 	getGLContext = () => {
@@ -333,8 +413,8 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 
 			gl.uniform2f(uniforms["u_resolution"], gl.drawingBufferWidth, gl.drawingBufferHeight);
 			gl.uniform1i(uniforms["u_mask"], 1);
-			gl.uniform4f(uniforms["u_main_color"], 1, 1, 0, 1)
-			gl.uniform4f(uniforms["u_accessory_color"], 0, 1, 1, 1);
+			gl.uniform1i(uniforms["u_textiles"], 2);
+
 
 			//TODO: is there any real way to check which sprite is used? does the game just skip the first sprite if the skin has 3?
 			let length = this.sprites.length;
