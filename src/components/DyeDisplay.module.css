@@ -1,0 +1,37 @@
+.dyeDisplay {
+	position: relative;
+	width: 64px;
+	height: 64px;
+	background-color: gray;
+	margin: 2px;
+	border-radius: 4px;
+	overflow: hidden;
+
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+}
+
+.remove {
+	position: absolute;
+	pointer-events: none;
+	font-size: 48px;
+}
+
+.dyeDisplaySelector {
+	width: 32px;
+	height: 64px;
+	background-color: transparent;
+	transition: background-color 0.1s;
+	pointer-events: all;
+}
+
+.dyeDisplaySelectorSelected {
+	border: 2px solid black;
+	box-sizing: border-box;
+}
+
+.dyeDisplaySelector:hover {
+	background-color: rgba(255, 255, 255, 0.5);
+}

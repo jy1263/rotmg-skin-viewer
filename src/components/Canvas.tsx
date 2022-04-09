@@ -1,6 +1,7 @@
-import React, { useEffect } from "react";
-import { Action, BasicTexture, Direction, Dye, Skin, Sprite, SpriteData, SpritePosition } from "rotmg-utils";
-import { Manager } from "./Assets";
+import React from "react";
+import { Action, Direction, Dye, Skin, Sprite, SpritePosition } from "rotmg-utils";
+import { Manager } from "../Assets";
+import styles from "./Canvas.module.css";
 
 export type CanvasState = {
 	data?: GLData;
@@ -82,6 +83,7 @@ const fragSrc = `
 
 	uniform vec4 u_main_textile_coords;
 	uniform vec4 u_accessory_textile_coords;
+	
 	uniform vec4 u_main_textile_anim;
 	uniform vec4 u_accessory_textile_anim;
 
@@ -89,6 +91,12 @@ const fragSrc = `
 	varying vec2 v_mask_coord;
 
 	varying vec2 v_relative_coords;
+
+	vec4 textile(in vec4 coords) {
+		float x = mod(coords.z * v_relative_coords.x * u_player_res.x, coords.z);
+		float y = mod(coords.w * v_relative_coords.y * u_player_res.y, coords.w);
+		return(texture2D(u_textiles, (coords.xy + vec2(x, y)) / u_textiles_res));
+	}
 
 	void main() {
 		vec4 mask = texture2D(u_mask, v_mask_coord / u_mask_res);
@@ -99,9 +107,7 @@ const fragSrc = `
 					return;
 				}
 				if (u_accessory_textile_coords.x != 0.0) {
-					float x = mod(u_accessory_textile_coords.z * v_relative_coords.x * u_player_res.x, u_accessory_textile_coords.z);
-					float y = mod(u_accessory_textile_coords.w * v_relative_coords.y * u_player_res.y, u_accessory_textile_coords.w);
-					gl_FragColor = texture2D(u_textiles, (u_accessory_textile_coords.xy + vec2(x, y)) / u_textiles_res);
+					gl_FragColor = vec4(mask.g, mask.g, mask.g, 1) * textile(u_accessory_textile_coords);
 					return;
 				}
 			} else if (mask.r > 0.003) {
@@ -110,9 +116,7 @@ const fragSrc = `
 					return;
 				}
 				if (u_main_textile_coords.x != 0.0) {
-					float x = mod(u_main_textile_coords.z * v_relative_coords.x * u_player_res.x, u_main_textile_coords.z);
-					float y = mod(u_main_textile_coords.w * v_relative_coords.y * u_player_res.y, u_main_textile_coords.w);
-					gl_FragColor = texture2D(u_textiles, (u_main_textile_coords.xy + vec2(x, y)) / u_textiles_res);
+					gl_FragColor = vec4(mask.r, mask.r, mask.r, 1) * textile(u_main_textile_coords) ;
 					return;
 				}
 			} 
@@ -219,11 +223,13 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 				uniforms: {},
 			}
 
+			const size = Math.min(gl.drawingBufferWidth, gl.drawingBufferHeight);
+
 			data.attribs["a_position"] = createAttrib(data.program, "a_position", [
-				32, 32,
-				368, 32,
-				368, 368,
-				32, 368
+				16, 16,
+				size - 16, 16,
+				size - 16, size - 16,
+				16, size - 16
 			]);
 			data.attribs["a_tex_coord"] = createAttrib(data.program, "a_tex_coord", [
 				1624, 388,
@@ -251,6 +257,8 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 			data.uniforms["u_textiles_res"] = gl.getUniformLocation(data.program, "u_textiles_res");
 			data.uniforms["u_main_textile_coords"] = gl.getUniformLocation(data.program, "u_main_textile_coords");
 			data.uniforms["u_accessory_textile_coords"] = gl.getUniformLocation(data.program, "u_accessory_textile_coords");
+			data.uniforms["u_main_textile_anim"] = gl.getUniformLocation(data.program, "u_main_textile_anim");
+			data.uniforms["u_accessory_textile_anim"] = gl.getUniformLocation(data.program, "u_accessory_textile_anim");
 			data.uniforms["u_player_res"] = gl.getUniformLocation(data.program, "u_player_res");
 
 			data.uniforms["u_image"] = gl.getUniformLocation(data.program, "u_image");
@@ -329,7 +337,11 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 				const textilePosition = sprite.getData().position;
 
 				gl.uniform4f(uniforms["u_main_textile_coords"], textilePosition.x, textilePosition.y, textilePosition.w, textilePosition.h);
+				gl.uniform4f(uniforms["u_main_color"], 0, 0, 0, 0);
 			}
+		} else {
+			gl.uniform4f(uniforms["u_main_textile_coords"], 0, 0, 0, 0);
+			gl.uniform4f(uniforms["u_main_color"], 0, 0, 0, 0);
 		}
 
 		if (accessoryDye !== undefined) {
@@ -343,7 +355,11 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 				})?.value as Sprite;
 				const textilePosition = sprite.getData().position;
 				gl.uniform4f(uniforms["u_accessory_textile_coords"], textilePosition.x, textilePosition.y, textilePosition.w, textilePosition.h);
+				gl.uniform4f(uniforms["u_accessory_color"], 0, 0, 0, 0);
 			}
+		} else {
+			gl.uniform4f(uniforms["u_accessory_textile_coords"], 0, 0, 0, 0);
+			gl.uniform4f(uniforms["u_accessory_color"], 0, 0, 0, 0);
 		}
 
 		gl.uniform2f(uniforms["u_player_res"], spriteData.position.w, spriteData.position.h);
@@ -445,6 +461,6 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 	}
 
 	render() {
-		return <canvas width={400} height={400} ref={this.canvasRef} onKeyDown={this.onKeyDown} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} tabIndex={1}></canvas>
+		return <canvas width={256} height={256} ref={this.canvasRef} onKeyDown={this.onKeyDown} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} tabIndex={1} className={styles.canvas}></canvas>
 	}
 }

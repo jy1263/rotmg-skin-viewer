@@ -1,9 +1,10 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
-import { Canvas } from './Canvas';
+import { Canvas } from './components/Canvas';
 import { Dye, Skin } from 'rotmg-utils';
 import { Manager, ManagerLoading } from './Assets';
+import styles from "./App.module.css";
+import { DyeDisplayList } from './components/DyeDisplayList';
+import { SkinDisplayList } from './components/SkinDisplayList';
 
 type AppState = {
 	skin?: Skin;
@@ -12,14 +13,29 @@ type AppState = {
 	loaded: boolean;
 }
 
+export type DyeSetters = {
+	main: DyeSetter;
+	accessory: DyeSetter;
+}
+
+export type SkinSetter = (skin: Skin) => void;
+
+export type DyeSetter = (dye?: Dye) => void
+
 export class App extends React.Component<{}, AppState> {
+	dyeSetters: DyeSetters;
+
 	constructor(props: {}) {
 		super(props)
 		this.state = {
 			loaded: false
 		}
-	}
 
+		this.dyeSetters = {
+			main: (dye) => this.setState({mainDye: dye}),
+			accessory: (dye) => this.setState({accessoryDye: dye})
+		}
+	}
 
 	componentDidMount() {
 		ManagerLoading.then(() => {
@@ -30,16 +46,19 @@ export class App extends React.Component<{}, AppState> {
 
 	onLoaded() {
 		this.setState({
-			skin: Manager.get("rotmg", "Robin Hood")?.value as Skin | undefined, 
-			mainDye: Manager.get("rotmg", "Blue Clothing Dye")?.value as Dye | undefined,
-			accessoryDye: Manager.get("rotmg", "Large Crown Cloth")?.value as Dye | undefined,
+			skin: Manager.get("rotmg", "Robin Hood")?.value as Skin | undefined
 		});
 	}
 
+	setSkin = (skin: Skin) => this.setState({skin})
+
 	render(): React.ReactNode {
 		return (
-			<div className="App">
+			<div className={styles.app}>
+
 				<Canvas skin={this.state.skin} mainDye={this.state.mainDye} accessoryDye={this.state.accessoryDye}/>
+				<DyeDisplayList setters={this.dyeSetters} main={this.state.mainDye} accessory={this.state.accessoryDye} />
+				<SkinDisplayList set={this.setSkin}/>
 			</div>
 		);
 	}
