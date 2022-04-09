@@ -1,5 +1,5 @@
 import React from "react";
-import { Action, Direction, Dye, Skin, Sprite, SpritePosition } from "rotmg-utils";
+import { Action, Direction, Dye, Skin, Sprite, SpriteData, SpritePosition } from "rotmg-utils";
 import { Manager } from "../Assets";
 import styles from "./Canvas.module.css";
 
@@ -372,6 +372,26 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		return gl;
 	}
 
+	getRenderVerts(gl: WebGLRenderingContext, data: SpriteData) {
+		let startX = gl.drawingBufferWidth / 3;
+		const widthScale = data.position.w / data.position.h;
+		const padding = 16;
+		const size = gl.drawingBufferWidth / 3;
+
+		if (this.state.flipped && widthScale > 1) {
+			startX -= size;
+		}
+
+		//TODO: this is dumb
+		return [
+			startX + padding, padding,
+			startX + (size * widthScale) - (widthScale > 1 ? padding  : 0), padding,
+			startX + (size * widthScale) - (widthScale > 1 ? padding  : 0), size - padding,
+			startX + padding, size - padding
+		]
+
+	}
+
 	onKeyDown = (ev: React.KeyboardEvent) => {
 		const newState: any = {};
 		if (ev.key === "w") {
@@ -442,6 +462,11 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 
 			const spriteData = this.sprites[index].getData();
 
+			const pos = attribs["a_position"];
+			gl.bindBuffer(gl.ARRAY_BUFFER, pos.buffer);
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getRenderVerts(gl, spriteData)), gl.DYNAMIC_DRAW)
+			gl.vertexAttribPointer(pos.location, 2, gl.FLOAT, false, 0, 0)
+
 			const attrib = attribs["a_tex_coord"];
 			gl.bindBuffer(gl.ARRAY_BUFFER, attrib.buffer);
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getVerts(spriteData.position)), gl.DYNAMIC_DRAW)
@@ -461,6 +486,6 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 	}
 
 	render() {
-		return <canvas width={256} height={256} ref={this.canvasRef} onKeyDown={this.onKeyDown} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} tabIndex={1} className={styles.canvas}></canvas>
+		return <canvas width={768} height={256} ref={this.canvasRef} onKeyDown={this.onKeyDown} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} tabIndex={1} className={styles.canvas}></canvas>
 	}
 }
