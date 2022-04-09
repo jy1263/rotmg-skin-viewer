@@ -5,22 +5,27 @@ import { Manager, ManagerLoading } from './Assets';
 import styles from "./App.module.css";
 import { DyeDisplayList } from './components/DyeDisplayList';
 import { SkinDisplayList } from './components/SkinDisplayList';
+import { TopBar } from './components/TopBar';
 
 type AppState = {
 	skin?: Skin;
 	mainDye?: Dye;
 	accessoryDye?: Dye;
+	settings: Settings
 	loaded: boolean;
 }
 
 export type DyeSetters = {
-	main: DyeSetter;
-	accessory: DyeSetter;
+	main: Setter<Dye | undefined>;
+	accessory: Setter<Dye | undefined>;
 }
 
-export type SkinSetter = (skin: Skin) => void;
+export type Setter<T> = (value: T) => void;
 
-export type DyeSetter = (dye?: Dye) => void
+export type Settings = {
+	animationSpeed: number;
+	animationSpeedSetter: Setter<number>
+}
 
 export class App extends React.Component<{}, AppState> {
 	dyeSetters: DyeSetters;
@@ -28,7 +33,11 @@ export class App extends React.Component<{}, AppState> {
 	constructor(props: {}) {
 		super(props)
 		this.state = {
-			loaded: false
+			loaded: false,
+			settings: {
+				animationSpeed: 2,
+				animationSpeedSetter: this.setAnimationSpeed
+			}
 		}
 
 		this.dyeSetters = {
@@ -51,14 +60,23 @@ export class App extends React.Component<{}, AppState> {
 	}
 
 	setSkin = (skin: Skin) => this.setState({skin})
+	setAnimationSpeed = (animationSpeed: number) => this.setState((state) => ({...state, settings: {...state.settings, animationSpeed: animationSpeed}}));
 
 	render(): React.ReactNode {
 		return (
-			<div className={styles.app}>
-				<Canvas skin={this.state.skin} mainDye={this.state.mainDye} accessoryDye={this.state.accessoryDye}/>
-				<DyeDisplayList setters={this.dyeSetters} main={this.state.mainDye} accessory={this.state.accessoryDye} />
-				<SkinDisplayList set={this.setSkin}/>
-			</div>
+			<React.Fragment>
+				<div className={styles.main}>
+					<TopBar settings={this.state.settings}/>
+					<div className={styles.app}>
+						<Canvas skin={this.state.skin} mainDye={this.state.mainDye} accessoryDye={this.state.accessoryDye} settings={this.state.settings}/>
+						<DyeDisplayList setters={this.dyeSetters} main={this.state.mainDye} accessory={this.state.accessoryDye} />
+						<SkinDisplayList set={this.setSkin}/>
+					</div>
+				</div>
+				<div id="portal" />
+			</React.Fragment>
+
+			
 		);
 	}
 }

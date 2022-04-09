@@ -6,9 +6,11 @@
 	align-items: center;
 	overflow: hidden;
 	background-color: rgba(60, 60, 60, 1);
+	grid-column: 2;
+	grid-row: 1;
 }
 
 .canvas {
 	margin: auto;
-	grid-column: 2;
+
 }

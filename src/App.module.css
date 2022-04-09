@@ -3,5 +3,19 @@
 	grid-template-rows: auto minmax(0, 1fr);
 	grid-template-columns: minmax(100px, 1fr) minmax(0, 6fr);
 	
+	height: calc(100% - 34px);
+}
+
+.main {
+	display: flex;
+	flex-direction: column;
 	height: 100%;
+}
+
+.topBar {
+	grid-row: 1;
+	grid-column: 1  / span 1;
+	height: 10px;
+	width: 100%;
+	background-color: red;;
 }

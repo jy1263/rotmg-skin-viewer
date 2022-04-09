@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { ObjectClass, Player, Skin, XMLObject } from "rotmg-utils";
-import { SkinSetter } from "../App";
+import { Setter } from "../App";
 import { Manager, ManagerLoading } from "../Assets";
 import { SkinDisplay } from "./SkinDisplay";
 import styles from "./SkinDisplayList.module.css";
 import cx from "classnames"
 
 type Props = {
-	set: SkinSetter;
-}
-
-type State = {
-	toggled: boolean;
-	skins: Skin[];
+	set: Setter<Skin>;
 }
 
 let globalSkins: Skin[] = [];

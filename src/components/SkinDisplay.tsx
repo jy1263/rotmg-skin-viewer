@@ -1,13 +1,13 @@
 import { CSSProperties } from "react";
 import { Skin, Sprite } from "rotmg-utils"
-import { SkinSetter } from "../App";
+import { Setter } from "../App";
 import { Manager } from "../Assets";
 import { getSpriteStyle } from "../helper";
 import styles from "./SkinDisplay.module.css";
 
 type Props = {
 	skin: Skin;
-	set: SkinSetter;
+	set: Setter<Skin>;
 }
 
 export function SkinDisplay(props: Props) {

@@ -1,5 +1,6 @@
 import React from "react";
 import { Action, Direction, Dye, Skin, Sprite, SpriteData, SpritePosition } from "rotmg-utils";
+import { Settings } from "../App";
 import { Manager } from "../Assets";
 import styles from "./Canvas.module.css";
 
@@ -17,6 +18,7 @@ export type CanvasProps = {
 	skin?: Skin;
 	mainDye?: Dye;
 	accessoryDye?: Dye;
+	settings: Settings;
 }
 
 export type AttribData = {
@@ -553,7 +555,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 			//TODO: is there any real way to check which sprite is used? does the game just skip the first sprite if the skin has 3?
 			let length = this.sprites.length;
 			if (length > 2) length--;
-			let index = Math.floor((this.time - this.lastUpdateTime) / 100) % length;
+			let index = Math.floor((this.time - this.lastUpdateTime) / (300 / this.props.settings.animationSpeed)) % length;
 			if (this.sprites.length > 2) {
 				index++;
 			}
