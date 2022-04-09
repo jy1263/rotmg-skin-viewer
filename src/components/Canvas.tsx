@@ -301,9 +301,9 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		requestAnimationFrame(this.animate);
 	}
 
-	componentDidUpdate(prevProps: CanvasProps) {
+	componentDidUpdate(prevProps: CanvasProps, prevState: CanvasState) {
 		if (this.props.skin !== undefined) {
-			this.updateSprites();
+			this.updateSprites(prevState);
 		}
 	}
 
@@ -323,7 +323,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		this.setState({size: [width, width / 3]})
 	}
 
-	updateSprites() {
+	updateSprites(prevState: CanvasState) {
 		const skin = this.props.skin as Skin;
 		const gl = this.getGLContext();
 		if (gl === null) return;
@@ -399,7 +399,10 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		}
 
 		gl.uniform2f(uniforms["u_player_res"], spriteData.position.w, spriteData.position.h);
-		this.lastUpdateTime = this.time;
+
+		if (this.state.action !== prevState.action || this.state.direction !== prevState.direction) {
+			this.lastUpdateTime = this.time;
+		}
 	}
 
 	getGLContext = () => {

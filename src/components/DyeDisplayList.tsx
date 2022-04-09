@@ -11,15 +11,11 @@ type Props = {
 	accessory?: Dye;
 }
 
-type State = {
-	dyes: Dye[];
-	searchInput: string;
-}
 
 let globalDyes: Dye[] = [];
 
 export function DyeDisplayList(props: Props) {
-	const [ dyes, setDyes ] = useState<Dye[]>([]);
+	const [ dyes, setDyes ] = useState<Dye[]>(globalDyes);
 	const [ searchInput, setSearchInput ] = useState<string>("");
 
 	const updateDyesFromFilter = () => {
@@ -32,7 +28,7 @@ export function DyeDisplayList(props: Props) {
 
 	useEffect(updateDyesFromFilter, [ searchInput ])
 	useEffect(() => {
-		if (dyes.length === 0) {
+		if (globalDyes.length === 0) {
 			ManagerLoading.then(() => {
 				const dyes = Manager.getAll<XMLObject>("dyes").filter((obj) => obj.class === ObjectClass.Dye && (obj as Dye).isClothing() && (obj as Dye).dyeAnimation === undefined) as Dye[]
 				if (globalDyes.length === 0) globalDyes = dyes;

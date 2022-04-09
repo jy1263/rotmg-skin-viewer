@@ -55,7 +55,6 @@ export class App extends React.Component<{}, AppState> {
 	render(): React.ReactNode {
 		return (
 			<div className={styles.app}>
-
 				<Canvas skin={this.state.skin} mainDye={this.state.mainDye} accessoryDye={this.state.accessoryDye}/>
 				<DyeDisplayList setters={this.dyeSetters} main={this.state.mainDye} accessory={this.state.accessoryDye} />
 				<SkinDisplayList set={this.setSkin}/>
