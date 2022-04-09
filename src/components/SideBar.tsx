@@ -1,19 +1,23 @@
-import React, { useEffect, useState } from "react";
-import { ObjectClass, Player, Skin, XMLObject } from "rotmg-utils";
+import React, { CSSProperties, ReactNode, useEffect, useState } from "react";
+import { Dye, ObjectClass, Player, Skin, Sprite, XMLObject } from "rotmg-utils";
 import { Setter } from "../App";
 import { Manager, ManagerLoading } from "../Assets";
 import { SkinDisplay } from "./SkinDisplay";
-import styles from "./SkinDisplayList.module.css";
+import styles from "./SideBar.module.css";
 import cx from "classnames"
+import { getSpriteStyle } from "../helper";
 
 type Props = {
 	set: Setter<Skin>;
+	skin?: Skin;
+	main?: Dye;
+	accessory?: Dye;
 }
 
 let globalSkins: Skin[] = [];
 let globalClasses: Player[] = [];
 
-export function SkinDisplayList(props: Props) {
+export function SideBar(props: Props) {
 	const [ skins, setSkins ] = useState<Skin[]>(globalSkins);
 	const [ classes, setClasses ] = useState<Player[]>(globalClasses);
 	const [ toggled, setToggled ] = useState<boolean>(true);
@@ -53,6 +57,34 @@ export function SkinDisplayList(props: Props) {
 		}
 	})
 
+	function getStyleFor(object: Dye | Skin | undefined): CSSProperties {
+		if (object === undefined) return {};
+
+		if (object instanceof Dye) {
+			if (object.isColor()) {
+				return {
+					borderRadius: "4px",
+					backgroundColor: object.getColor()
+				}
+			} else {
+				let sprite = Manager.get<Sprite>("sprites", {
+					texture: object.getTextileTexture()
+				})?.value;
+				if (sprite !== undefined) {
+					return { ...getSpriteStyle(sprite, 32), borderRadius: "4px" }
+				}
+			}
+		} else {
+			let sprite = Manager.get<Sprite>("sprites", {
+				texture: object.texture
+			})?.value;
+			if (sprite !== undefined) {
+				return  getSpriteStyle(sprite, 32);
+			}
+		}
+		return {};
+	}
+
 	useEffect(() => {
 		updateSkins()
 	}, [ searchInput, classType ])
@@ -64,6 +96,18 @@ export function SkinDisplayList(props: Props) {
 			))}
 		</select>
 		<input type="text" className={styles.searchInput} onInput={updateSearchFilter}/>
+		<div className={styles.currentSelectedBar}>
+
+			<div className={styles.currentSelected} title={props.skin?.getDisplayName() ?? "No skin selected!"}>
+				<div style={getStyleFor(props.skin)} />
+			</div>
+			<div className={styles.currentSelected} title={props.main?.getDisplayName() ?? "No dye selected!"}>
+				<div style={getStyleFor(props.main)} />
+			</div>
+			<div className={styles.currentSelected} title={props.accessory?.getDisplayName() ?? "No dye selected!"}>
+				<div style={getStyleFor(props.accessory)} />
+			</div>
+		</div>
 		<div className={styles.list}>
 			{skins.map((skin => {
 				return <SkinDisplay key={skin.id} skin={skin} set={props.set}/>

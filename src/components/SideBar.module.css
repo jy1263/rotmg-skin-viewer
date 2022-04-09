@@ -40,3 +40,44 @@
 	width: calc(100% - 8px);
 	max-width: 248px;
 }
+
+.currentSelectedBar {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: nowrap;
+	margin-bottom: 8px;
+}
+
+.currentSelectedBar > *:first-child {
+	border-radius: 4px 0px 0px 4px;
+}
+
+.currentSelectedBar > *:last-child {
+	border-radius: 0px 4px 4px 0px
+}
+
+.currentSelected {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	background-color: rgb(40, 40, 40);
+	
+}
+
+.currentSelected > * {
+	width: 32px;
+	height: 32px;
+
+}
+
+.tooltip {
+	position: relative;
+	width: 1000px;
+	z-index: 100;
+	background-color: red;
+	overflow: visible;
+}

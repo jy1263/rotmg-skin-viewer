@@ -4,7 +4,7 @@ import { Dye, Skin } from 'rotmg-utils';
 import { Manager, ManagerLoading } from './Assets';
 import styles from "./App.module.css";
 import { DyeDisplayList } from './components/DyeDisplayList';
-import { SkinDisplayList } from './components/SkinDisplayList';
+import { SideBar } from './components/SideBar';
 import { TopBar } from './components/TopBar';
 
 type AppState = {
@@ -70,7 +70,7 @@ export class App extends React.Component<{}, AppState> {
 					<div className={styles.app}>
 						<Canvas skin={this.state.skin} mainDye={this.state.mainDye} accessoryDye={this.state.accessoryDye} settings={this.state.settings}/>
 						<DyeDisplayList setters={this.dyeSetters} main={this.state.mainDye} accessory={this.state.accessoryDye} />
-						<SkinDisplayList set={this.setSkin}/>
+						<SideBar set={this.setSkin} skin={this.state.skin} main={this.state.mainDye} accessory={this.state.accessoryDye}/>
 					</div>
 				</div>
 				<div id="portal" />
