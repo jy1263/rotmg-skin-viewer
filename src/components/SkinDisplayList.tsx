@@ -4,24 +4,41 @@ import { SkinSetter } from "../App";
 import { Manager, ManagerLoading } from "../Assets";
 import { SkinDisplay } from "./SkinDisplay";
 import styles from "./SkinDisplayList.module.css";
+import cx from "classnames"
 
 type Props = {
 	set: SkinSetter;
 }
 
+type State = {
+	toggled: boolean;
+	skins: Skin[];
+}
+
 export function SkinDisplayList(props: Props) {
-	const [ state, setState ] = useState<Skin[]>([]);
+	const [ state, setState ] = useState<State>({
+		toggled: true,
+		skins: []
+	});
 
 	useEffect(() => {
-		if (state.length === 0) {
+		if (state.skins.length === 0) {
 			ManagerLoading.then(() => {
-				setState(Manager.getAll<XMLObject>("rotmg").filter((obj) => obj.class === ObjectClass.Skin && (obj as Skin).playerClassType === 0x0307) as Skin[]);
+				setState((state) => ({
+					...state, skins: Manager.getAll<XMLObject>("rotmg").filter((obj) => obj.class === ObjectClass.Skin && (obj as Skin).playerClassType === 0x0307) as Skin[]
+				}))
 			})
 		}
 	})
 
-	return <div className={styles.list}>
-		{state.map((skin => {
+	function toggle() {
+		setState(state => ({
+			...state, toggled: !state.toggled
+		}))
+	}
+
+	return <div className={cx(styles.list, {[styles.hidden]: !state.toggled})}>
+		{state.skins.map((skin => {
 			return <SkinDisplay key={skin.id} skin={skin} set={props.set}/>
 		}))}
 	</div>

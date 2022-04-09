@@ -9,6 +9,8 @@ export type CanvasState = {
 	action: Action;
 	flipped: boolean;
 	animationHandle?: number
+
+	size: [number, number]
 }
 
 export type CanvasProps = {
@@ -170,11 +172,14 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		this.state = {
 			direction: Direction.Front,
 			action: Action.Walk,
-			flipped: false
+			flipped: false,
+			size: [768, 256]
 		}
 	}
 
 	componentDidMount() {
+		window.addEventListener("resize", this.onResize);
+
 		const gl = this.getGLContext();
 		if (gl === null) return;
 
@@ -296,6 +301,16 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		if (this.state.animationHandle) {
 			cancelAnimationFrame(this.state.animationHandle);
 		}
+		window.removeEventListener("resize", this.onResize);
+	}
+
+	onResize = () => {
+		const canvas = this.canvasRef.current;
+		if (canvas === null || canvas.parentElement === null) return;
+		const parentSize = canvas.parentElement.getBoundingClientRect();
+		const width = Math.min(768, parentSize.width);
+		const height = Math.min(256, parentSize.height);
+		this.setState({size: [width, width / 3]})
 	}
 
 	updateSprites() {
@@ -486,6 +501,9 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 	}
 
 	render() {
-		return <canvas width={768} height={256} ref={this.canvasRef} onKeyDown={this.onKeyDown} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} tabIndex={1} className={styles.canvas}></canvas>
+		return <div className={styles.container}>
+			<canvas width={this.state.size[0]} height={this.state.size[1]} ref={this.canvasRef} onKeyDown={this.onKeyDown} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} tabIndex={1} className={styles.canvas}></canvas>
+		</div>
+
 	}
 }
