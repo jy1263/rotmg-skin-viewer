@@ -165,6 +165,8 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 	canvasRef: React.RefObject<HTMLCanvasElement>
 	sprites: Sprite[] = [];
 	time: number = 0;
+	set: number = 0;
+	setCount: number = 1;
 
 	constructor(props: CanvasProps) {
 		super(props)
@@ -318,13 +320,24 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		const gl = this.getGLContext();
 		if (gl === null) return;
 		if (this.state.data === undefined) return;
-		this.sprites = Manager.get("sprites", {
+		const sprites = Manager.get("sprites", {
 			texture: skin.texture,
 			animated: true,
 			multiple: true,
 			direction: this.state.direction,
 			action: this.state.action
 		})?.value as Sprite[]
+
+		const sets: number[] = [];
+
+		for (const sprite of sprites) {
+			const set = sprite.getAnimatedData().set;
+			if (!sets.includes(set)) sets.push(set);
+		}
+
+		const set = sets[Math.floor(Math.random() * sets.length)];
+		this.sprites = sprites.filter(sprite => sprite.getAnimatedData().set === set);
+
 		const spriteData = this.sprites[0].getData();
 		const { program, uniforms, attribs } = this.state.data;
 		const textureCoord = attribs["a_tex_coord"];
@@ -501,7 +514,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 	}
 
 	render() {
-		return <div className={styles.container}>
+		return <div className={styles.container} style={{height: this.state.size[1]}}>
 			<canvas width={this.state.size[0]} height={this.state.size[1]} ref={this.canvasRef} onKeyDown={this.onKeyDown} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} tabIndex={1} className={styles.canvas}></canvas>
 		</div>
 
