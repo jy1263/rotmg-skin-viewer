@@ -16,7 +16,7 @@ export function TopBar(props: {settings: Settings}) {
 			<img className={styles.icon} src="discord_logo.svg" alt="Discord link" />
 		</a>
 		
-		<a href="https://github.com/Haizor/rotmg-utils" target="_blank" rel="noreferrer">
+		<a href="https://github.com/Haizor/rotmg-skin-viewer" target="_blank" rel="noreferrer">
 			<img className={cx(styles.icon, styles.github)} src="github_icon.svg" alt="Github link" />
 		</a>
 		<div className={styles.title}>
