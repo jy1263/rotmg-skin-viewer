@@ -439,9 +439,9 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 
 		return [
 			0, 0,
-			widthScale, 0,
-			widthScale, 1,
-			0, 1
+			widthScale / 2, 0,
+			widthScale / 2, 0.5,
+			0, 0.5
 		]
 	}
 
