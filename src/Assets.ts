@@ -27,7 +27,8 @@ const config = {
 			},
 			
 			sources: [
-				"https://www.haizor.net/rotmg/assets/production/xml/skins.xml",
+				"https://www.haizor.net/rotmg/assets/production/xml/players.xml",
+				"https://www.haizor.net/rotmg/assets/production/xml/skins.xml"
 			]
 		},
 		{

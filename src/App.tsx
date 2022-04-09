@@ -55,7 +55,7 @@ export class App extends React.Component<{}, AppState> {
 
 	onLoaded() {
 		this.setState({
-			skin: Manager.get("skins", "Robin Hood")?.value as Skin | undefined
+			skin: Manager.get("skins", "Bandit Rogue")?.value as Skin | undefined
 		});
 	}
 

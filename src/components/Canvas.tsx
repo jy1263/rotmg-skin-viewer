@@ -426,10 +426,10 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 
 		//TODO: this is dumb
 		return [
-			startX + padding, padding,
-			startX + (size * widthScale) , padding,
+			startX, padding,
+			startX + (size * widthScale), padding,
 			startX + (size * widthScale), size - padding,
-			startX + padding, size - padding
+			startX, size - padding
 		]
 
 	}
