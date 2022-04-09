@@ -165,15 +165,23 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 	canvasRef: React.RefObject<HTMLCanvasElement>
 	sprites: Sprite[] = [];
 	time: number = 0;
+	lastUpdateTime: number = 0;
 	set: number = 0;
 	setCount: number = 1;
+
+	moving: boolean = false;
+	attacking: boolean = false;
+	
+	move: {
+		[direction: string]: boolean
+	} = {}
 
 	constructor(props: CanvasProps) {
 		super(props)
 		this.canvasRef = React.createRef();
 		this.state = {
-			direction: Direction.Front,
-			action: Action.Walk,
+			direction: Direction.Side,
+			action: Action.None,
 			flipped: false,
 			size: [768, 256]
 		}
@@ -311,7 +319,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		if (canvas === null || canvas.parentElement === null) return;
 		const parentSize = canvas.parentElement.getBoundingClientRect();
 		const width = Math.min(768, parentSize.width);
-		const height = Math.min(256, parentSize.height);
+		// const height = Math.min(256, parentSize.height);
 		this.setState({size: [width, width / 3]})
 	}
 
@@ -391,6 +399,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		}
 
 		gl.uniform2f(uniforms["u_player_res"], spriteData.position.w, spriteData.position.h);
+		this.lastUpdateTime = this.time;
 	}
 
 	getGLContext = () => {
@@ -420,8 +429,40 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 
 	}
 
+	getRelativeVerts(data: SpriteData) {
+		const widthScale = data.position.w / data.position.h;
+
+		return [
+			0, 0,
+			widthScale, 0,
+			widthScale, 1,
+			0, 1
+		]
+	}
+
+	keyToDirection(key: string): string | undefined {
+		switch(key) {
+			case "w":
+				return "up";
+			case "s": 
+				return "down";
+			case "a":
+				return "left";
+			case "d":
+				return "right";
+		}
+	}
+
+	isMoving(): boolean {
+		for (const value of Object.values(this.move)) {
+			if (value) return value;
+		}
+		return false;
+	}
+
 	onKeyDown = (ev: React.KeyboardEvent) => {
 		const newState: any = {};
+
 		if (ev.key === "w") {
 			newState.direction = Direction.Front;
 			newState.flipped = false;
@@ -436,15 +477,41 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 			newState.flipped = false;
 		}
 
+		const dir = this.keyToDirection(ev.key);
+		if (dir !== undefined) {
+			this.move[dir] = true;
+			if (!this.attacking) newState.action = Action.Walk;
+		}
+
 		this.setState(newState);
 	}
 
-	onMouseDown = (ev: React.MouseEvent) => {
-		this.setState({action: Action.Attack});
+	onKeyUp = (ev: React.KeyboardEvent) => {
+		const dir = this.keyToDirection(ev.key);
+		if (dir !== undefined) {
+			this.move[dir] = false;
+			if (!this.attacking && !this.isMoving()) {
+				this.setState({action: Action.None});
+			}
+		}
 	}
 
 	onMouseUp = (ev: React.MouseEvent) => {
-		this.setState({action: Action.Walk});
+		this.attacking = false;
+		this.setState({action: this.moving ? Action.Walk : Action.None});
+	}
+
+	onMouseDown = (ev: React.MouseEvent) => {
+		this.attacking = true;
+		this.setState({action: Action.Attack});
+	}
+
+	onTouchStart = (ev: React.TouchEvent) => {
+		this.attacking = true;
+	}
+
+	onTouchEnd = (ev: React.TouchEvent) => {
+		this.attacking = false;
 	}
 
 	getVerts(position: SpritePosition) {
@@ -483,7 +550,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 			//TODO: is there any real way to check which sprite is used? does the game just skip the first sprite if the skin has 3?
 			let length = this.sprites.length;
 			if (length > 2) length--;
-			let index = Math.floor(this.time / 100) % length;
+			let index = Math.floor((this.time - this.lastUpdateTime) / 100) % length;
 			if (this.sprites.length > 2) {
 				index++;
 			}
@@ -505,6 +572,11 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getVerts(spriteData.maskPosition)), gl.DYNAMIC_DRAW)
 			gl.vertexAttribPointer(maskCoord.location, 2, gl.FLOAT, false, 0, 0)
 
+			const relative = attribs["a_relative_coords"];
+			gl.bindBuffer(gl.ARRAY_BUFFER, relative.buffer);
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getRelativeVerts(spriteData)), gl.DYNAMIC_DRAW)
+			gl.vertexAttribPointer(relative.location, 2, gl.FLOAT, false, 0, 0)
+
 			var primitiveType = gl.TRIANGLE_FAN;
 			var offset = 0;
 			var count = 4;
@@ -515,7 +587,20 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 
 	render() {
 		return <div className={styles.container} style={{height: this.state.size[1]}}>
-			<canvas width={this.state.size[0]} height={this.state.size[1]} ref={this.canvasRef} onKeyDown={this.onKeyDown} onMouseDown={this.onMouseDown} onMouseUp={this.onMouseUp} tabIndex={1} className={styles.canvas}></canvas>
+			<canvas 
+				width={this.state.size[0]} 
+				height={this.state.size[1]} 
+				ref={this.canvasRef} 
+				onKeyDown={this.onKeyDown} 
+				onKeyUp={this.onKeyUp}
+				onMouseDown={this.onMouseDown} 
+				onMouseUp={this.onMouseUp} 
+				onTouchStart={this.onTouchStart}
+				onTouchEnd={this.onTouchEnd}
+				tabIndex={1} 
+				className={styles.canvas}>
+					
+			</canvas>
 		</div>
 
 	}

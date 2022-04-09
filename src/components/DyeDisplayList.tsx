@@ -34,7 +34,7 @@ export function DyeDisplayList(props: Props) {
 	useEffect(() => {
 		if (dyes.length === 0) {
 			ManagerLoading.then(() => {
-				const dyes = Manager.getAll<XMLObject>("dyes").filter((obj) => obj.class === ObjectClass.Dye && (obj as Dye).isClothing()) as Dye[]
+				const dyes = Manager.getAll<XMLObject>("dyes").filter((obj) => obj.class === ObjectClass.Dye && (obj as Dye).isClothing() && (obj as Dye).dyeAnimation === undefined) as Dye[]
 				if (globalDyes.length === 0) globalDyes = dyes;
 				updateDyesFromFilter()
 			})
