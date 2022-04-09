@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ObjectClass, Skin, XMLObject } from "rotmg-utils";
+import React, { useEffect, useState } from "react";
+import { ObjectClass, Player, Skin, XMLObject } from "rotmg-utils";
 import { SkinSetter } from "../App";
 import { Manager, ManagerLoading } from "../Assets";
 import { SkinDisplay } from "./SkinDisplay";
@@ -15,31 +15,64 @@ type State = {
 	skins: Skin[];
 }
 
+let globalSkins: Skin[] = [];
+let globalClasses: Player[] = [];
+
 export function SkinDisplayList(props: Props) {
-	const [ state, setState ] = useState<State>({
-		toggled: true,
-		skins: []
-	});
+	const [ skins, setSkins ] = useState<Skin[]>(globalSkins);
+	const [ classes, setClasses ] = useState<Player[]>(globalClasses);
+	const [ toggled, setToggled ] = useState<boolean>(true);
+	const [ searchInput, setSearchInput ] = useState<string>("");
+	const [ classType, setClassType ] = useState<number>(0x0300);
+
+	function toggle() {
+		setToggled(!toggled);
+	}
+
+	const updateSkins = () => {
+		setSkins(globalSkins.filter(skin => skin.playerClassType === classType && skin.getDisplayName().toLowerCase().includes(searchInput.toLowerCase())));
+	}
+
+	const updateSearchFilter = (ev: React.FormEvent<HTMLInputElement>) => {
+		setSearchInput((ev.target as HTMLFormElement).value);
+	}
+
+	const updateClassType = (ev: React.FormEvent<HTMLSelectElement>) => {
+		setClassType(parseInt((ev.target as HTMLSelectElement).value))
+	}
 
 	useEffect(() => {
-		if (state.skins.length === 0) {
+		if (skins.length === 0) {
 			ManagerLoading.then(() => {
-				setState((state) => ({
-					...state, skins: Manager.getAll<XMLObject>("rotmg").filter((obj) => obj.class === ObjectClass.Skin && (obj as Skin).playerClassType === 0x0307) as Skin[]
-				}))
+				const skins = Manager.getAll<XMLObject>("skins").filter((obj) => obj.class === ObjectClass.Skin) as Skin[];
+				if (globalSkins.length === 0) globalSkins = skins;
+				updateSkins();
+			})
+		}
+		if (globalClasses.length === 0) {
+			ManagerLoading.then(() => {
+				const classes = Manager.getAll<XMLObject>("classes").filter((obj) => obj.class === ObjectClass.Player) as Player[];
+				if (globalClasses.length === 0) globalClasses = classes;
+				setClasses(classes);
 			})
 		}
 	})
 
-	function toggle() {
-		setState(state => ({
-			...state, toggled: !state.toggled
-		}))
-	}
+	useEffect(() => {
+		updateSkins()
+	}, [ searchInput, classType ])
 
-	return <div className={cx(styles.list, {[styles.hidden]: !state.toggled})}>
-		{state.skins.map((skin => {
-			return <SkinDisplay key={skin.id} skin={skin} set={props.set}/>
-		}))}
+	return <div className={cx(styles.container, {[styles.hidden]: !toggled})}>
+		<select onChange={updateClassType} className={styles.classInput}>
+			{classes.map(clazz => (
+				<option key={clazz.type} value={clazz.type}>{clazz.getDisplayName()}</option>
+			))}
+		</select>
+		<input type="text" className={styles.searchInput} onInput={updateSearchFilter}/>
+		<div className={styles.list}>
+			{skins.map((skin => {
+				return <SkinDisplay key={skin.id} skin={skin} set={props.set}/>
+			}))}
+		</div>
 	</div>
 }

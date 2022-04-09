@@ -6,7 +6,20 @@ const config = {
 	containers: [
 		{
 			loader: "rotmg-loader",
-			type: "rotmg",
+			type: "classes",
+			sourceLoader: "url-to-text",
+			settings: {
+				readOnly: true,
+				type: "object"
+			},
+			
+			sources: [
+				"https://www.haizor.net/rotmg/assets/production/xml/players.xml",
+			]
+		},
+		{
+			loader: "rotmg-loader",
+			type: "skins",
 			sourceLoader: "url-to-text",
 			settings: {
 				readOnly: true,
@@ -15,6 +28,18 @@ const config = {
 			
 			sources: [
 				"https://www.haizor.net/rotmg/assets/production/xml/skins.xml",
+			]
+		},
+		{
+			loader: "rotmg-loader",
+			type: "dyes",
+			sourceLoader: "url-to-text",
+			settings: {
+				readOnly: true,
+				type: "object"
+			},
+			
+			sources: [
 				"https://www.haizor.net/rotmg/assets/production/xml/dyes.xml",
 				"https://www.haizor.net/rotmg/assets/production/xml/textiles.xml"
 			]
