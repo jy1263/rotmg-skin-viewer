@@ -422,13 +422,14 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 
 		if (this.state.flipped && widthScale > 1) {
 			startX -= size;
+			startX += padding;
 		}
 
 		//TODO: this is dumb
 		return [
 			startX, padding,
-			startX + (size * widthScale), padding,
-			startX + (size * widthScale), size - padding,
+			startX + (size * widthScale) - padding * widthScale, padding,
+			startX + (size * widthScale) - padding * widthScale, size - padding,
 			startX, size - padding
 		]
 
