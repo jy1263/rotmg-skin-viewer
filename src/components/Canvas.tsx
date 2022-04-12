@@ -97,8 +97,8 @@ const fragSrc = `
 	varying vec2 v_relative_coords;
 
 	vec4 textile(in vec4 coords) {
-		float x = mod(coords.z * v_relative_coords.x * u_player_res.x, coords.z);
-		float y = mod(coords.w * v_relative_coords.y * u_player_res.y, coords.w);
+		float x = mod(5.0 * v_relative_coords.x * u_player_res.x, coords.z);
+		float y = mod(5.0 * v_relative_coords.y * u_player_res.y, coords.w);
 		return(texture2D(u_textiles, (coords.xy + vec2(x, y)) / u_textiles_res));
 	}
 
@@ -436,13 +436,11 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 	}
 
 	getRelativeVerts(data: SpriteData) {
-		const widthScale = data.position.w / data.position.h;
-
 		return [
 			0, 0,
-			widthScale / 2, 0,
-			widthScale / 2, 0.5,
-			0, 0.5
+			1, 0,
+			1, 1,
+			0, 1
 		]
 	}
 
@@ -562,6 +560,8 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 			}
 
 			const spriteData = this.sprites[index].getData();
+
+			gl.uniform2f(uniforms["u_player_res"], spriteData.position.w, spriteData.position.h);
 
 			const pos = attribs["a_position"];
 			gl.bindBuffer(gl.ARRAY_BUFFER, pos.buffer);
