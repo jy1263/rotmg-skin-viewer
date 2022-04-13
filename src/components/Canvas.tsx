@@ -1,3 +1,4 @@
+import { off } from "process";
 import React from "react";
 import { Action, Direction, Dye, Skin, Sprite, SpriteData, SpritePosition } from "rotmg-utils";
 import { Settings } from "../App";
@@ -91,6 +92,8 @@ const fragSrc = `
 	uniform vec4 u_main_textile_anim;
 	uniform vec4 u_accessory_textile_anim;
 
+	uniform int u_outline;
+
 	varying vec2 v_tex_coord;
 	varying vec2 v_mask_coord;
 
@@ -103,6 +106,12 @@ const fragSrc = `
 	}
 
 	void main() {
+		vec4 main = texture2D(u_image, v_tex_coord / u_image_res);
+		if (u_outline == 1 && main.a != 0.0) {
+			gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+			return;
+		}
+
 		vec4 mask = texture2D(u_mask, v_mask_coord / u_mask_res);
 		if (mask.a > 0.003) {
 			if (mask.g > 0.006) {
@@ -125,7 +134,8 @@ const fragSrc = `
 				}
 			} 
 		}
-		gl_FragColor = texture2D(u_image, v_tex_coord / u_image_res);
+
+		gl_FragColor = main;
 	}
 `
 
@@ -283,6 +293,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 			data.uniforms["u_textiles"] = gl.getUniformLocation(data.program, "u_textiles");
 			data.uniforms["u_main_color"] = gl.getUniformLocation(data.program, "u_main_color");
 			data.uniforms["u_accessory_color"] = gl.getUniformLocation(data.program, "u_accessory_color");
+			data.uniforms["u_outline"] = gl.getUniformLocation(data.program, "u_outline");
 			
 			Promise.all([
 				createTexture("https://www.haizor.net/rotmg/assets/production/atlases/characters.png", "image", gl.TEXTURE0),
@@ -401,6 +412,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		}
 
 		gl.uniform2f(uniforms["u_player_res"], spriteData.position.w, spriteData.position.h);
+		gl.uniform1i(uniforms["u_outline"], 0);
 
 		if (this.state.action !== prevState.action || this.state.direction !== prevState.direction) {
 			this.lastUpdateTime = this.time;
@@ -414,7 +426,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 		return gl;
 	}
 
-	getRenderVerts(gl: WebGLRenderingContext, data: SpriteData) {
+	getRenderVerts(gl: WebGLRenderingContext, data: SpriteData, offset: [number, number] = [0, 0]) {
 		let startX = gl.drawingBufferWidth / 3;
 		const widthScale = data.position.w / data.position.h;
 		const padding = 16;
@@ -427,10 +439,10 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 
 		//TODO: this is dumb
 		return [
-			startX, padding,
-			startX + (size * widthScale) - padding * widthScale, padding,
-			startX + (size * widthScale) - padding * widthScale, size - padding,
-			startX, size - padding
+			startX + offset[0], padding + offset[1],
+			startX + (size * widthScale) - padding * widthScale + offset[0], padding + offset[1],
+			startX + (size * widthScale) - padding * widthScale + offset[0], size - padding + offset[1],
+			startX + offset[0], size - padding + offset[1]
 		]
 
 	}
@@ -551,6 +563,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 			gl.uniform1i(uniforms["u_textiles"], 2);
 
 
+
 			//TODO: is there any real way to check which sprite is used? does the game just skip the first sprite if the skin has 3?
 			let length = this.sprites.length;
 			if (length > 2) length--;
@@ -563,10 +576,7 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 
 			gl.uniform2f(uniforms["u_player_res"], spriteData.position.w, spriteData.position.h);
 
-			const pos = attribs["a_position"];
-			gl.bindBuffer(gl.ARRAY_BUFFER, pos.buffer);
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getRenderVerts(gl, spriteData)), gl.DYNAMIC_DRAW)
-			gl.vertexAttribPointer(pos.location, 2, gl.FLOAT, false, 0, 0)
+
 
 			const attrib = attribs["a_tex_coord"];
 			gl.bindBuffer(gl.ARRAY_BUFFER, attrib.buffer);
@@ -586,6 +596,28 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 			var primitiveType = gl.TRIANGLE_FAN;
 			var offset = 0;
 			var count = 4;
+
+			gl.uniform1i(uniforms["u_outline"], 1);
+			gl.bindBuffer(gl.ARRAY_BUFFER, attribs["a_position"].buffer);
+
+			//Outline Size
+			const o = 4 / (256 / this.state.size[1]);
+
+			//Using the same program is pretty lazy, but I don't want to set up the stuff for a second program
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getRenderVerts(gl, spriteData, [o, o])), gl.DYNAMIC_DRAW)
+			gl.drawArrays(primitiveType, offset, count);
+
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getRenderVerts(gl, spriteData, [-o, o])), gl.DYNAMIC_DRAW)
+			gl.drawArrays(primitiveType, offset, count);
+
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getRenderVerts(gl, spriteData, [-o, -o])), gl.DYNAMIC_DRAW)
+			gl.drawArrays(primitiveType, offset, count);
+
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getRenderVerts(gl, spriteData, [o, -o])), gl.DYNAMIC_DRAW)
+			gl.drawArrays(primitiveType, offset, count);
+
+			gl.uniform1i(uniforms["u_outline"], 0);
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.getRenderVerts(gl, spriteData)), gl.DYNAMIC_DRAW);
 			gl.drawArrays(primitiveType, offset, count);
 		}
 		requestAnimationFrame(this.animate);
