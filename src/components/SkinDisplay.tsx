@@ -23,7 +23,7 @@ export function SkinDisplay(props: Props) {
 		style.height = 64;
 	}
 
-	return <div className={styles.skin} style={style} onClick={() => props.set(props.skin)}>
+	return <div className={styles.skin} style={style} onClick={() => props.set(props.skin)} title={props.skin.getDisplayName()}>
 		
 	</div>
 }

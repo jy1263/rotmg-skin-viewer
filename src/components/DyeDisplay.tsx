@@ -29,7 +29,7 @@ export function DyeDisplay(props: DyeDisplayProps) {
 		}
 	} 
 	
-	return <div className={styles.dyeDisplay} style={style}>
+	return <div className={styles.dyeDisplay} style={style} title={props.dye?.getDisplayName()}>
 		{props.dye === undefined && 
 			(<div className={styles.remove}>
 				❌
