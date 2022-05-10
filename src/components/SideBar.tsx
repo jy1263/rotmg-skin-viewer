@@ -41,7 +41,7 @@ export function SideBar(props: Props) {
 	}
 
 	useEffect(() => {
-		if (skins.length === 0) {
+		if (globalSkins.length === 0) {
 			ManagerLoading.then(() => {
 				const skins = Manager.getAll<XMLObject>("skins").map((obj) => {
 					if (obj.class === ObjectClass.Skin) return obj as Skin;
@@ -54,7 +54,7 @@ export function SideBar(props: Props) {
 					skin.playerClassType = player.type;
 					return skin;
 				})
-				if (globalSkins.length === 0) globalSkins = skins;
+				globalSkins = skins;
 				updateSkins();
 			})
 		}
