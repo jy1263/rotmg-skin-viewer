@@ -1,4 +1,3 @@
-import { off } from "process";
 import React from "react";
 import { Action, Direction, Dye, Skin, Sprite, SpriteData, SpritePosition } from "rotmg-utils";
 import { Settings } from "../App";
