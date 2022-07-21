@@ -14,7 +14,7 @@ const config = {
 			},
 			
 			sources: [
-				"https://www.haizor.net/rotmg/assets/production/xml/players.xml",
+				"https://rotmg-mirror.github.io/rotmg-metadata/production/xml/players.xml",
 			]
 		},
 		{
@@ -27,8 +27,8 @@ const config = {
 			},
 			
 			sources: [
-				"https://www.haizor.net/rotmg/assets/production/xml/players.xml",
-				"https://www.haizor.net/rotmg/assets/production/xml/skins.xml"
+				"https://rotmg-mirror.github.io/rotmg-metadata/production/xml/players.xml",
+				"https://rotmg-mirror.github.io/rotmg-metadata/production/xml/skins.xml"
 			]
 		},
 		{
@@ -41,16 +41,19 @@ const config = {
 			},
 			
 			sources: [
-				"https://www.haizor.net/rotmg/assets/production/xml/dyes.xml",
-				"https://www.haizor.net/rotmg/assets/production/xml/textiles.xml"
+				"https://rotmg-mirror.github.io/rotmg-metadata/production/xml/dyes.xml",
+				"https://rotmg-mirror.github.io/rotmg-metadata/production/xml/textiles.xml"
 			]
 		},
 		{
 			type: "sprites",
 			loader: "sprite-loader",
 			sourceLoader: "url-to-text",
+			settings: {
+				atlasRoot: "https://rotmg-mirror.github.io/rotmg-metadata/production/atlases/"
+			},
 			sources: [
-				"https://www.haizor.net/rotmg/assets/production/atlases/spritesheet.json"
+				"https://rotmg-mirror.github.io/rotmg-metadata/production/atlases/spritesheet.json"
 			]
 		}
 	]

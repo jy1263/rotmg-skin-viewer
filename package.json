@@ -15,7 +15,7 @@
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-scripts": "5.0.0",
-    "rotmg-utils": "github:Haizor/rotmg-utils",
+    "rotmg-utils": "github:rotmg-mirror/rotmg-utils",
     "typescript": "^4.6.3",
     "web-vitals": "^2.1.4"
   },
