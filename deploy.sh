@@ -3,6 +3,9 @@
 # abort on errors
 set -e
 
+# set origin url
+ORIGIN=$(git remote get-url origin)
+
 # build
 yarn build
 
@@ -13,6 +16,6 @@ git init
 git add -A
 git commit -m 'deploy'
 
-git push -f https://github.com/jy1263/rotmg-skin-viewer.git master:gh-pages
+git push -f $ORIGIN master:gh-pages
 
 cd -
