@@ -295,9 +295,9 @@ export class Canvas extends React.Component<CanvasProps, CanvasState> {
 			data.uniforms["u_outline"] = gl.getUniformLocation(data.program, "u_outline");
 			
 			Promise.all([
-				createTexture("https://rotmg-mirror.github.io/rotmg-metadata/production/atlases/characters.png", "image", gl.TEXTURE0),
-				createTexture("https://rotmg-mirror.github.io/rotmg-metadata/production/atlases/characters_masks.png", "mask", gl.TEXTURE1),
-				createTexture("https://rotmg-mirror.github.io/rotmg-metadata/production/atlases/mapObjects.png", "textiles", gl.TEXTURE2),
+				createTexture("https://rotmg-mirror.github.io/rotmg-metadata/assets/production/atlases/characters.png", "image", gl.TEXTURE0),
+				createTexture("https://rotmg-mirror.github.io/rotmg-metadata/assets/production/atlases/characters_masks.png", "mask", gl.TEXTURE1),
+				createTexture("https://rotmg-mirror.github.io/rotmg-metadata/assets/production/atlases/mapObjects.png", "textiles", gl.TEXTURE2),
 			]).then((textures: (WebGLTexture | null)[]) => {
 				this.setState((state) => {
 					if (state.data) {

@@ -14,7 +14,7 @@ const config = {
 			},
 			
 			sources: [
-				"https://rotmg-mirror.github.io/rotmg-metadata/production/xml/players.xml",
+				"https://rotmg-mirror.github.io/rotmg-metadata/assets/production/xml/players.xml",
 			]
 		},
 		{
@@ -27,8 +27,8 @@ const config = {
 			},
 			
 			sources: [
-				"https://rotmg-mirror.github.io/rotmg-metadata/production/xml/players.xml",
-				"https://rotmg-mirror.github.io/rotmg-metadata/production/xml/skins.xml"
+				"https://rotmg-mirror.github.io/rotmg-metadata/assets/production/xml/players.xml",
+				"https://rotmg-mirror.github.io/rotmg-metadata/assets/production/xml/skins.xml"
 			]
 		},
 		{
@@ -41,8 +41,8 @@ const config = {
 			},
 			
 			sources: [
-				"https://rotmg-mirror.github.io/rotmg-metadata/production/xml/dyes.xml",
-				"https://rotmg-mirror.github.io/rotmg-metadata/production/xml/textiles.xml"
+				"https://rotmg-mirror.github.io/rotmg-metadata/assets/production/xml/dyes.xml",
+				"https://rotmg-mirror.github.io/rotmg-metadata/assets/production/xml/textiles.xml"
 			]
 		},
 		{
@@ -50,10 +50,10 @@ const config = {
 			loader: "sprite-loader",
 			sourceLoader: "url-to-text",
 			settings: {
-				atlasRoot: "https://rotmg-mirror.github.io/rotmg-metadata/production/atlases/"
+				atlasRoot: "https://rotmg-mirror.github.io/rotmg-metadata/assets/production/atlases/"
 			},
 			sources: [
-				"https://rotmg-mirror.github.io/rotmg-metadata/production/atlases/spritesheet.json"
+				"https://rotmg-mirror.github.io/rotmg-metadata/assets/production/atlases/spritesheet.json"
 			]
 		}
 	]
